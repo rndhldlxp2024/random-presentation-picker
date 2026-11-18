@@ -74,13 +74,16 @@
           <div class="stage-center" id="stage-center">
             <!-- Ball Machine Container -->
             <div class="anim-stage active" id="stage-ball">
-              <div class="dome-wrapper" id="dome-wrapper" title="클릭하면 로또 원통을 신나게 흔들어 공을 섞습니다! (단축키: S)">
-                <div class="dome-outer-ring"></div>
-                <canvas id="lottery-dome-canvas" width="460" height="460"></canvas>
-                <div class="dome-glass-shine"></div>
-                <div class="dome-chute"></div>
-                <button type="button" class="dome-shake-btn" id="btn-dome-shake" title="로또 원통을 흔들어 공 섞기 (단축키: S)">
-                  <span>🌪️ 원통 흔들기</span>
+              <div class="dome-wrapper" id="dome-wrapper" title="클릭하면 에어로또 캡슐의 회오리 믹서를 가동합니다! (단축키: S)">
+                <div class="dome-ambient-glow"></div>
+                <div class="dome-sphere" id="dome-sphere">
+                  <div class="dome-metallic-bezel"></div>
+                  <canvas id="lottery-dome-canvas" width="460" height="460"></canvas>
+                  <div class="dome-glass-shine"></div>
+                </div>
+                <div class="dome-pedestal"></div>
+                <button type="button" class="dome-shake-btn" id="btn-dome-shake" title="회오리 에어믹서로 캡슐 흔들기 (단축키: S)">
+                  <span>🌪️ 캡슐 스월 믹스</span>
                   <kbd>S</kbd>
                 </button>
               </div>

@@ -185,30 +185,50 @@ class SoundEffects {
     });
   }
 
-  playDomeShakeSound(durationMs = 700) {
+  playDomeShakeSound(durationMs = 880) {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const hits = Math.max(5, Math.floor(durationMs / 65));
-    for (let i = 0; i < hits; i++) {
-      const t = now + i * 0.06 + Math.random() * 0.025;
+    const durSec = Math.min(1.1, durationMs / 1000);
+
+    // 1) 부드러운 에어 터빈 스윕 사운드 (Sine sweep)
+    const sweepOsc = this.ctx.createOscillator();
+    const sweepGain = this.ctx.createGain();
+    sweepOsc.type = 'sine';
+    sweepOsc.frequency.setValueAtTime(140, now);
+    sweepOsc.frequency.exponentialRampToValueAtTime(340, now + durSec * 0.45);
+    sweepOsc.frequency.exponentialRampToValueAtTime(160, now + durSec);
+
+    sweepGain.gain.setValueAtTime(0.001, now);
+    sweepGain.gain.linearRampToValueAtTime(0.06, now + durSec * 0.25);
+    sweepGain.gain.exponentialRampToValueAtTime(0.001, now + durSec);
+
+    sweepOsc.connect(sweepGain);
+    sweepGain.connect(this.ctx.destination);
+    sweepOsc.start(now);
+    sweepOsc.stop(now + durSec + 0.02);
+
+    // 2) 세련된 크리스탈 캡슐 차임 아르페지오
+    const scale = [523.25, 659.25, 783.99, 987.77, 1046.5, 1318.5, 1174.66, 880];
+    const steps = 7;
+    for (let i = 0; i < steps; i++) {
+      const t = now + i * (durSec / (steps + 1));
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      // 플라스틱 로또 공들이 원통 벽에 부딪히는 경쾌한 통통 소리
-      osc.type = i % 2 === 0 ? 'triangle' : 'sine';
-      const baseFreq = 260 + ((i * 85) % 420) + Math.random() * 90;
-      osc.frequency.setValueAtTime(baseFreq, t);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.55, t + 0.048);
+      osc.type = 'sine';
+      const freq = scale[i % scale.length];
+      osc.frequency.setValueAtTime(freq, t);
 
-      gain.gain.setValueAtTime(0.11, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.052);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.055, t + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
       osc.start(t);
-      osc.stop(t + 0.055);
+      osc.stop(t + 0.15);
     }
   }
 }
@@ -304,8 +324,10 @@ class LotteryDomeEngine {
     this.ctx = canvas.getContext('2d');
     this.balls = [];
     this.turbulence = 1; // 1 = gentle idle, 6 = vigorous mixing
+    this.shakeStartTime = 0;
     this.shakeEndTime = 0;
-    this.shakePhase = 0;
+    this.swirlEnergy = 0; // 0 ~ 1 smooth interpolation
+    this.swirlDirection = 1;
     this.vortexAngle = 0;
     this.highlightStudentId = null;
     this.startLoop();
@@ -316,7 +338,6 @@ class LotteryDomeEngine {
     const cy = this.canvas.height / 2;
     const maxR = this.canvas.width / 2 - 34;
 
-    // 기존 공 위치를 유지하면서 남아있는 학생만 동기화하여 자연스러운 물리 움직임 유지
     const existingMap = new Map(this.balls.map((b) => [b.student.id, b]));
 
     this.balls = remainingStudents.map((st, idx) => {
@@ -348,25 +369,30 @@ class LotteryDomeEngine {
   }
 
   /**
-   * 원통을 물리적으로 강하게 흔들어 공들에 관성 충격파와 회오리 힘을 전달합니다.
+   * 세련된 나선형 에어 사이클론(Swirl Vortex) 물리 가속을 부여합니다.
    */
-  triggerCylinderShake(durationMs = 780) {
+  triggerCylinderShake(durationMs = 920) {
     const now = performance.now();
+    this.shakeStartTime = now;
     this.shakeEndTime = Math.max(this.shakeEndTime, now + durationMs);
+    this.swirlDirection = Math.random() > 0.3 ? 1 : -1;
+
     const cx = this.canvas.width / 2;
     const cy = this.canvas.height / 2;
 
-    // 즉시 강한 초기 충격파 + 회전 소용돌이 가속도 부여
-    this.balls.forEach((b) => {
+    // 각 공에 부드럽고 우아한 궤도 회전 속도 + 중심부 교차 리프트 부여
+    this.balls.forEach((b, idx) => {
       const dx = b.x - cx;
       const dy = b.y - cy;
-      const tangentialAngle = Math.atan2(dy, dx) + Math.PI / 2;
-      const burstSpeed = 9 + Math.random() * 11;
-      b.vx += Math.cos(tangentialAngle) * burstSpeed + (Math.random() - 0.5) * 14;
-      b.vy += Math.sin(tangentialAngle) * burstSpeed - (4 + Math.random() * 10);
+      const angle = Math.atan2(dy, dx);
+      const tangentAngle = angle + (Math.PI / 2) * this.swirlDirection;
+      const orbitalSpeed = 9.5 + (idx % 5) * 1.4;
+
+      b.vx = b.vx * 0.3 + Math.cos(tangentAngle) * orbitalSpeed;
+      b.vy = b.vy * 0.3 + Math.sin(tangentAngle) * orbitalSpeed - 2.5;
     });
 
-    // 렌더링 순서도 섞어 공들이 입체적으로 뒤섞이는 효과
+    // 깊이감 있는 교차를 위해 볼 배열 순서 셔플
     for (let i = this.balls.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [this.balls[i], this.balls[j]] = [this.balls[j], this.balls[i]];
@@ -391,47 +417,48 @@ class LotteryDomeEngine {
     const now = performance.now();
     const isShaking = now < this.shakeEndTime;
 
-    if (isShaking) {
-      this.shakePhase += 0.45;
-      this.vortexAngle += 0.16;
-    } else if (this.turbulence > 1.5) {
-      this.vortexAngle += 0.1;
-    } else {
-      this.vortexAngle += 0.015;
-    }
-
-    // 원통이 좌우/상하로 흔들릴 때 내부 공들이 받는 관성 가속도
-    const shakeForceX = isShaking ? Math.sin(this.shakePhase * 1.7) * 4.2 : 0;
-    const shakeForceY = isShaking ? Math.cos(this.shakePhase * 2.3) * 3.6 : 0;
+    // 부드러운 에너지 감쇠 보간 (0.0 ~ 1.0)
+    const targetEnergy = isShaking ? 1 : this.turbulence > 1.5 ? 0.75 : 0;
+    this.swirlEnergy += (targetEnergy - this.swirlEnergy) * (targetEnergy > this.swirlEnergy ? 0.16 : 0.06);
+    this.vortexAngle += (0.012 + this.swirlEnergy * 0.095) * this.swirlDirection;
 
     for (let i = 0; i < this.balls.length; i++) {
       const b = this.balls[i];
 
-      if (isShaking) {
-        // 원통 흔들림 관성력 + 회오리 소용돌이 힘
+      if (this.swirlEnergy > 0.08) {
+        // 우아한 사이클론 회오리 기류 (접선 방향 가속 + 반경 방향 호흡 주기)
         const dx = b.x - cx;
         const dy = b.y - cy;
         const dist = Math.max(1, Math.hypot(dx, dy));
-        const tx = -dy / dist;
-        const ty = dx / dist;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const tx = -ny * this.swirlDirection;
+        const ty = nx * this.swirlDirection;
 
-        b.vx += shakeForceX + tx * 1.65 + (Math.random() - 0.5) * 3.8;
-        b.vy += shakeForceY + ty * 1.65 + (Math.random() - 0.52) * 3.8;
-      } else if (this.turbulence > 1.5) {
-        // Strong air jet mixing during draw
-        b.vx += (Math.random() - 0.5) * 2.4 * this.turbulence;
-        b.vy += (Math.random() - 0.52) * 2.4 * this.turbulence;
+        // 목표 궤도 반경으로 부드럽게 유도하면서 회전시켜 공들이 한곳에 뭉치지 않고 유려하게 회전
+        const targetOrbit = domeRadius * (0.48 + 0.28 * Math.sin(this.vortexAngle * 2 + i * 0.9));
+        const radialPull = ((targetOrbit - dist) / domeRadius) * 1.4;
+
+        b.vx += (tx * 1.35 + nx * radialPull) * this.swirlEnergy;
+        b.vy += (ty * 1.35 + ny * radialPull) * this.swirlEnergy;
+
+        if (this.turbulence > 1.5) {
+          b.vx += (Math.random() - 0.5) * 1.6 * this.turbulence;
+          b.vy += (Math.random() - 0.5) * 1.6 * this.turbulence;
+        }
       } else {
-        // Gentle floating / air blower at bottom
-        b.vy += 0.18;
+        // 평상시 부드러운 유영 (하단 에어 블로워)
+        b.vy += 0.16;
         if (b.y > cy + domeRadius * 0.45) {
-          b.vy -= 0.48 + Math.random() * 0.35;
-          b.vx += (Math.random() - 0.5) * 0.6;
+          b.vy -= 0.45 + Math.random() * 0.32;
+          b.vx += (Math.random() - 0.5) * 0.5;
         }
       }
 
-      // Clamp velocity
-      const maxSpeed = isShaking ? 19 : this.turbulence > 1.5 ? 15 : 3.8;
+      // 공기 저항 감쇠 및 최고 속도 제한
+      b.vx *= 0.985;
+      b.vy *= 0.985;
+      const maxSpeed = 3.8 + this.swirlEnergy * 12.5;
       const speed = Math.hypot(b.vx, b.vy);
       if (speed > maxSpeed) {
         b.vx = (b.vx / speed) * maxSpeed;
@@ -453,10 +480,9 @@ class LotteryDomeEngine {
         b.x = cx + nx * limit;
         b.y = cy + ny * limit;
 
-        // Reflect velocity
         const dot = b.vx * nx + b.vy * ny;
-        b.vx -= 1.85 * dot * nx;
-        b.vy -= 1.85 * dot * ny;
+        b.vx -= 1.82 * dot * nx;
+        b.vy -= 1.82 * dot * ny;
       }
     }
 
@@ -479,10 +505,9 @@ class LotteryDomeEngine {
           b.x += nx * overlap;
           b.y += ny * overlap;
 
-          // Exchange impulse
           const kx = a.vx - b.vx;
           const ky = a.vy - b.vy;
-          const p = 2 * (nx * kx + ny * ky) / 2;
+          const p = (nx * kx + ny * ky);
           a.vx -= p * nx * 0.85;
           a.vy -= p * ny * 0.85;
           b.vx += p * nx * 0.85;
@@ -496,26 +521,43 @@ class LotteryDomeEngine {
     const ctx = this.ctx;
     const W = this.canvas.width;
     const H = this.canvas.height;
+    const cx = W / 2;
+    const cy = H / 2;
     ctx.clearRect(0, 0, W, H);
 
-    // Draw subtle grid ring & swirling wind inside dome
-    const isShaking = performance.now() < this.shakeEndTime || this.turbulence > 1.5;
+    // 1. 은은한 내부 오로라 & 실크 리본 링 (점선 제거, 고급스러운 그라데이션 광원 적용)
     ctx.save();
-    ctx.translate(W / 2, H / 2);
-    ctx.rotate(this.vortexAngle);
-    ctx.strokeStyle = isShaking ? 'rgba(251, 191, 36, 0.28)' : 'rgba(255, 255, 255, 0.06)';
-    ctx.lineWidth = isShaking ? 3 : 2;
-    ctx.setLineDash(isShaking ? [28, 18] : []);
-    ctx.beginPath();
-    ctx.arc(0, 0, W / 2 - 42, 0, Math.PI * 2);
-    ctx.stroke();
-
-    if (isShaking) {
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([18, 24]);
+    if (this.swirlEnergy > 0.03) {
+      const auraGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, W / 2 - 20);
+      auraGrad.addColorStop(0, `rgba(56, 189, 248, ${0.18 * this.swirlEnergy})`);
+      auraGrad.addColorStop(0.55, `rgba(99, 102, 241, ${0.14 * this.swirlEnergy})`);
+      auraGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = auraGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, W / 2 - 82, 0, Math.PI * 2);
+      ctx.arc(cx, cy, W / 2 - 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 회전하는 유려한 빛의 궤적 호(Arc) 2개
+      ctx.translate(cx, cy);
+      ctx.rotate(this.vortexAngle);
+      for (let k = 0; k < 2; k++) {
+        ctx.rotate(Math.PI);
+        const arcGrad = ctx.createLinearGradient(-150, 0, 150, 0);
+        arcGrad.addColorStop(0, 'transparent');
+        arcGrad.addColorStop(0.5, `rgba(125, 211, 252, ${0.35 * this.swirlEnergy})`);
+        arcGrad.addColorStop(1, 'transparent');
+        ctx.strokeStyle = arcGrad;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(0, 0, W / 2 - 46 - k * 28, -0.7, 0.7);
+        ctx.stroke();
+      }
+    } else {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, W / 2 - 42, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
@@ -525,7 +567,7 @@ class LotteryDomeEngine {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
       ctx.font = '800 20px Pretendard, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('추첨 완료! 🎉', W / 2, H / 2);
+      ctx.fillText('추첨 완료! 🎉', cx, cy);
       ctx.restore();
       return;
     }
@@ -533,7 +575,25 @@ class LotteryDomeEngine {
     for (const b of this.balls) {
       ctx.save();
 
-      // 3D Sphere Gradient
+      // 2. 빠르게 회전할 때 공 뒤로 흐르는 부드러운 모션 글로우 잔상 (Motion Trail)
+      const speed = Math.hypot(b.vx, b.vy);
+      if (speed > 5.2 && this.swirlEnergy > 0.1) {
+        const trailLen = Math.min(34, speed * 2.1);
+        const tx = b.x - (b.vx / speed) * trailLen;
+        const ty = b.y - (b.vy / speed) * trailLen;
+        const trailGrad = ctx.createLinearGradient(b.x, b.y, tx, ty);
+        trailGrad.addColorStop(0, `${b.palette.light}55`);
+        trailGrad.addColorStop(1, 'transparent');
+        ctx.strokeStyle = trailGrad;
+        ctx.lineWidth = b.r * 1.45;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+      }
+
+      // 3. 3D Sphere Gradient
       const grad = ctx.createRadialGradient(
         b.x - b.r * 0.32,
         b.y - b.r * 0.32,
@@ -1087,7 +1147,7 @@ async function drawNextStudent() {
 
 let domeShakeVisualTimer = null;
 
-function triggerDomeVisualShake(durationMs = 780) {
+function triggerDomeVisualShake(durationMs = 920) {
   const domeWrap = document.getElementById('dome-wrapper');
   if (domeWrap) {
     domeWrap.classList.remove('shaking');
@@ -1108,12 +1168,12 @@ function shakeLotteryDomeManually() {
   const cls = getCurrentClass();
   const remaining = getRemainingStudents(cls);
   if (remaining.length === 0) {
-    showToast('⚠️ 현재 원통 안에 남은 학생 공이 없습니다!');
+    showToast('⚠️ 현재 캡슐 안에 남은 학생 공이 없습니다!');
     return;
   }
   hideWinnerSpotlight();
-  triggerDomeVisualShake(760);
-  showToast(`🌪️ 로또 원통을 신나게 흔들어 ${remaining.length}개의 공을 다시 섞었습니다!`);
+  triggerDomeVisualShake(920);
+  showToast(`🌪️ 에어 사이클론 가동! ${remaining.length}개의 공을 부드럽게 스월 믹싱했습니다.`);
 }
 
 async function handleSaveProgressForNextClass() {

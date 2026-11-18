@@ -370,80 +370,160 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transform-origin: 50% 65%;
-  will-change: transform;
+  perspective: 1100px;
 }
 
-.dome-outer-ring {
+.dome-ambient-glow {
   position: absolute;
-  inset: -14px;
+  inset: -28px;
   border-radius: 50%;
-  border: 4px dashed rgba(251, 191, 36, 0.32);
-  box-shadow: 0 0 30px rgba(99, 102, 241, 0.25);
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.24) 0%,
+    rgba(56, 189, 248, 0.12) 45%,
+    transparent 72%
+  );
+  filter: blur(18px);
   pointer-events: none;
-  transition: border-color 0.25s, box-shadow 0.25s, transform 0.3s;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  opacity: 0.7;
 }
 
-.dome-wrapper:hover .dome-outer-ring {
-  border-color: rgba(251, 191, 36, 0.65);
-  box-shadow: 0 0 40px rgba(251, 191, 36, 0.35);
+.dome-wrapper.shaking .dome-ambient-glow {
+  opacity: 1;
+  transform: scale(1.12);
+  background: radial-gradient(
+    circle,
+    rgba(56, 189, 248, 0.42) 0%,
+    rgba(139, 92, 246, 0.28) 45%,
+    rgba(245, 158, 11, 0.15) 65%,
+    transparent 76%
+  );
 }
 
-.dome-wrapper.shaking {
-  animation: domeCylinderShake 0.48s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+.dome-sphere {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  transform-origin: 50% 62%;
+  will-change: transform;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.dome-wrapper.shaking .dome-outer-ring {
-  border-color: #fbbf24;
-  box-shadow:
-    0 0 55px rgba(251, 191, 36, 0.65),
-    inset 0 0 30px rgba(56, 189, 248, 0.45);
-  animation: ringSpinFast 0.7s linear infinite;
+.dome-wrapper:hover:not(.shaking) .dome-sphere {
+  transform: translateY(-3px) scale(1.012);
 }
 
-@keyframes domeCylinderShake {
-  0%   { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-  12%  { transform: translate3d(-16px, -10px, 0) rotate(-9deg) scale(1.03); }
-  25%  { transform: translate3d(15px, 6px, 0) rotate(8.5deg) scale(1.04); }
-  37%  { transform: translate3d(-18px, 8px, 0) rotate(-10.5deg) scale(1.03); }
-  50%  { transform: translate3d(16px, -12px, 0) rotate(9.5deg) scale(1.05); }
-  62%  { transform: translate3d(-14px, -6px, 0) rotate(-8deg) scale(1.03); }
-  75%  { transform: translate3d(14px, 9px, 0) rotate(7.5deg) scale(1.02); }
-  87%  { transform: translate3d(-9px, -5px, 0) rotate(-4.5deg) scale(1.01); }
-  100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+.dome-wrapper.shaking .dome-sphere {
+  animation: domeSleekSwirl 0.92s cubic-bezier(0.25, 1, 0.35, 1) forwards;
 }
 
-@keyframes ringSpinFast {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+@keyframes domeSleekSwirl {
+  0% {
+    transform: translate3d(0, 0, 0) rotateZ(0deg) rotateX(0deg) scale(1);
+  }
+  16% {
+    transform: translate3d(-11px, -7px, 18px) rotateZ(-6.5deg) rotateX(6deg) scale(1.032);
+  }
+  36% {
+    transform: translate3d(12px, -10px, 24px) rotateZ(7deg) rotateX(-5deg) scale(1.038);
+  }
+  56% {
+    transform: translate3d(-8px, -5px, 14px) rotateZ(-4.5deg) rotateX(4deg) scale(1.022);
+  }
+  74% {
+    transform: translate3d(5px, -2px, 8px) rotateZ(2.6deg) rotateX(-2deg) scale(1.01);
+  }
+  88% {
+    transform: translate3d(-2px, 0, 2px) rotateZ(-1deg) rotateX(1deg) scale(1.003);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotateZ(0deg) rotateX(0deg) scale(1);
+  }
+}
+
+.dome-metallic-bezel {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  padding: 6px;
+  background: conic-gradient(
+    from 120deg,
+    rgba(255, 255, 255, 0.38),
+    rgba(99, 102, 241, 0.55),
+    rgba(56, 189, 248, 0.7),
+    rgba(255, 255, 255, 0.15),
+    rgba(139, 92, 246, 0.6),
+    rgba(255, 255, 255, 0.38)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.75;
+  transition: opacity 0.35s ease, filter 0.35s ease;
+}
+
+.dome-wrapper.shaking .dome-metallic-bezel {
+  opacity: 1;
+  filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.7));
+  animation: bezelShimmer 0.92s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bezelShimmer {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); }
+}
+
+.dome-pedestal {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56%;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.45) 0%, rgba(15, 23, 42, 0.9) 70%);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 20px rgba(56, 189, 248, 0.3);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .dome-shake-btn {
   position: absolute;
-  bottom: -16px;
+  bottom: -18px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
-  border: 2px solid rgba(255, 255, 255, 0.45);
-  color: #fff;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #f8fafc;
   font-family: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   padding: 7px 16px;
   border-radius: 99px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 8px 22px rgba(234, 88, 12, 0.55);
+  gap: 7px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.55),
+    0 0 15px rgba(56, 189, 248, 0.22);
   z-index: 5;
   white-space: nowrap;
-  transition: transform 0.18s, box-shadow 0.18s;
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dome-shake-btn:hover {
-  transform: translateX(-50%) translateY(-2px) scale(1.05);
-  box-shadow: 0 10px 28px rgba(245, 158, 11, 0.75);
+  transform: translateX(-50%) translateY(-2px);
+  background: rgba(30, 41, 75, 0.95);
+  border-color: #38bdf8;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.65),
+    0 0 22px rgba(56, 189, 248, 0.45);
 }
 
 .dome-shake-btn:active {
@@ -451,22 +531,24 @@ html, body {
 }
 
 .dome-shake-btn kbd {
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.35);
   padding: 1px 6px;
   border-radius: 5px;
   font-size: 11px;
-  color: #fde68a;
+  font-weight: 800;
+  color: #7dd3fc;
 }
 
 #lottery-dome-canvas {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, rgba(56, 189, 248, 0.14), rgba(15, 23, 42, 0.85) 70%);
+  background: radial-gradient(circle at 35% 28%, rgba(56, 189, 248, 0.16), rgba(15, 23, 42, 0.9) 72%);
   box-shadow:
-    inset 0 0 40px rgba(99, 102, 241, 0.35),
-    0 16px 50px rgba(0, 0, 0, 0.6),
-    0 0 0 8px rgba(255, 255, 255, 0.08);
+    inset 0 0 45px rgba(56, 189, 248, 0.25),
+    inset 0 -24px 40px rgba(99, 102, 241, 0.3),
+    0 18px 50px rgba(0, 0, 0, 0.65);
 }
 
 .dome-glass-shine {
@@ -474,8 +556,38 @@ html, body {
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, transparent 40%, rgba(255, 255, 255, 0.05) 100%);
-  border: 2px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 24%, transparent 48%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.18) 0%, transparent 42%, rgba(56, 189, 248, 0.08) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+}
+
+.dome-glass-shine::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  left: -120%;
+  width: 65%;
+  height: 180%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.26) 50%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+}
+
+.dome-wrapper.shaking .dome-glass-shine::after {
+  animation: glassLightSweep 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes glassLightSweep {
+  0%   { left: -110%; opacity: 0; }
+  25%  { opacity: 1; }
+  100% { left: 145%; opacity: 0; }
 }
 
 /* 2. Slot Machine Frame */
@@ -1886,13 +1998,16 @@ html, body {
           <div class="stage-center" id="stage-center">
             <!-- Ball Machine Container -->
             <div class="anim-stage active" id="stage-ball">
-              <div class="dome-wrapper" id="dome-wrapper" title="클릭하면 로또 원통을 신나게 흔들어 공을 섞습니다! (단축키: S)">
-                <div class="dome-outer-ring"></div>
-                <canvas id="lottery-dome-canvas" width="460" height="460"></canvas>
-                <div class="dome-glass-shine"></div>
-                <div class="dome-chute"></div>
-                <button type="button" class="dome-shake-btn" id="btn-dome-shake" title="로또 원통을 흔들어 공 섞기 (단축키: S)">
-                  <span>🌪️ 원통 흔들기</span>
+              <div class="dome-wrapper" id="dome-wrapper" title="클릭하면 에어로또 캡슐의 회오리 믹서를 가동합니다! (단축키: S)">
+                <div class="dome-ambient-glow"></div>
+                <div class="dome-sphere" id="dome-sphere">
+                  <div class="dome-metallic-bezel"></div>
+                  <canvas id="lottery-dome-canvas" width="460" height="460"></canvas>
+                  <div class="dome-glass-shine"></div>
+                </div>
+                <div class="dome-pedestal"></div>
+                <button type="button" class="dome-shake-btn" id="btn-dome-shake" title="회오리 에어믹서로 캡슐 흔들기 (단축키: S)">
+                  <span>🌪️ 캡슐 스월 믹스</span>
                   <kbd>S</kbd>
                 </button>
               </div>
@@ -2348,30 +2463,50 @@ class SoundEffects {
     });
   }
 
-  playDomeShakeSound(durationMs = 700) {
+  playDomeShakeSound(durationMs = 880) {
     if (!this.enabled) return;
     this.init();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const hits = Math.max(5, Math.floor(durationMs / 65));
-    for (let i = 0; i < hits; i++) {
-      const t = now + i * 0.06 + Math.random() * 0.025;
+    const durSec = Math.min(1.1, durationMs / 1000);
+
+    // 1) 부드러운 에어 터빈 스윕 사운드 (Sine sweep)
+    const sweepOsc = this.ctx.createOscillator();
+    const sweepGain = this.ctx.createGain();
+    sweepOsc.type = 'sine';
+    sweepOsc.frequency.setValueAtTime(140, now);
+    sweepOsc.frequency.exponentialRampToValueAtTime(340, now + durSec * 0.45);
+    sweepOsc.frequency.exponentialRampToValueAtTime(160, now + durSec);
+
+    sweepGain.gain.setValueAtTime(0.001, now);
+    sweepGain.gain.linearRampToValueAtTime(0.06, now + durSec * 0.25);
+    sweepGain.gain.exponentialRampToValueAtTime(0.001, now + durSec);
+
+    sweepOsc.connect(sweepGain);
+    sweepGain.connect(this.ctx.destination);
+    sweepOsc.start(now);
+    sweepOsc.stop(now + durSec + 0.02);
+
+    // 2) 세련된 크리스탈 캡슐 차임 아르페지오
+    const scale = [523.25, 659.25, 783.99, 987.77, 1046.5, 1318.5, 1174.66, 880];
+    const steps = 7;
+    for (let i = 0; i < steps; i++) {
+      const t = now + i * (durSec / (steps + 1));
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      // 플라스틱 로또 공들이 원통 벽에 부딪히는 경쾌한 통통 소리
-      osc.type = i % 2 === 0 ? 'triangle' : 'sine';
-      const baseFreq = 260 + ((i * 85) % 420) + Math.random() * 90;
-      osc.frequency.setValueAtTime(baseFreq, t);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.55, t + 0.048);
+      osc.type = 'sine';
+      const freq = scale[i % scale.length];
+      osc.frequency.setValueAtTime(freq, t);
 
-      gain.gain.setValueAtTime(0.11, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.052);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.055, t + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
       osc.start(t);
-      osc.stop(t + 0.055);
+      osc.stop(t + 0.15);
     }
   }
 }
@@ -2467,8 +2602,10 @@ class LotteryDomeEngine {
     this.ctx = canvas.getContext('2d');
     this.balls = [];
     this.turbulence = 1; // 1 = gentle idle, 6 = vigorous mixing
+    this.shakeStartTime = 0;
     this.shakeEndTime = 0;
-    this.shakePhase = 0;
+    this.swirlEnergy = 0; // 0 ~ 1 smooth interpolation
+    this.swirlDirection = 1;
     this.vortexAngle = 0;
     this.highlightStudentId = null;
     this.startLoop();
@@ -2479,7 +2616,6 @@ class LotteryDomeEngine {
     const cy = this.canvas.height / 2;
     const maxR = this.canvas.width / 2 - 34;
 
-    // 기존 공 위치를 유지하면서 남아있는 학생만 동기화하여 자연스러운 물리 움직임 유지
     const existingMap = new Map(this.balls.map((b) => [b.student.id, b]));
 
     this.balls = remainingStudents.map((st, idx) => {
@@ -2511,25 +2647,30 @@ class LotteryDomeEngine {
   }
 
   /**
-   * 원통을 물리적으로 강하게 흔들어 공들에 관성 충격파와 회오리 힘을 전달합니다.
+   * 세련된 나선형 에어 사이클론(Swirl Vortex) 물리 가속을 부여합니다.
    */
-  triggerCylinderShake(durationMs = 780) {
+  triggerCylinderShake(durationMs = 920) {
     const now = performance.now();
+    this.shakeStartTime = now;
     this.shakeEndTime = Math.max(this.shakeEndTime, now + durationMs);
+    this.swirlDirection = Math.random() > 0.3 ? 1 : -1;
+
     const cx = this.canvas.width / 2;
     const cy = this.canvas.height / 2;
 
-    // 즉시 강한 초기 충격파 + 회전 소용돌이 가속도 부여
-    this.balls.forEach((b) => {
+    // 각 공에 부드럽고 우아한 궤도 회전 속도 + 중심부 교차 리프트 부여
+    this.balls.forEach((b, idx) => {
       const dx = b.x - cx;
       const dy = b.y - cy;
-      const tangentialAngle = Math.atan2(dy, dx) + Math.PI / 2;
-      const burstSpeed = 9 + Math.random() * 11;
-      b.vx += Math.cos(tangentialAngle) * burstSpeed + (Math.random() - 0.5) * 14;
-      b.vy += Math.sin(tangentialAngle) * burstSpeed - (4 + Math.random() * 10);
+      const angle = Math.atan2(dy, dx);
+      const tangentAngle = angle + (Math.PI / 2) * this.swirlDirection;
+      const orbitalSpeed = 9.5 + (idx % 5) * 1.4;
+
+      b.vx = b.vx * 0.3 + Math.cos(tangentAngle) * orbitalSpeed;
+      b.vy = b.vy * 0.3 + Math.sin(tangentAngle) * orbitalSpeed - 2.5;
     });
 
-    // 렌더링 순서도 섞어 공들이 입체적으로 뒤섞이는 효과
+    // 깊이감 있는 교차를 위해 볼 배열 순서 셔플
     for (let i = this.balls.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [this.balls[i], this.balls[j]] = [this.balls[j], this.balls[i]];
@@ -2554,47 +2695,48 @@ class LotteryDomeEngine {
     const now = performance.now();
     const isShaking = now < this.shakeEndTime;
 
-    if (isShaking) {
-      this.shakePhase += 0.45;
-      this.vortexAngle += 0.16;
-    } else if (this.turbulence > 1.5) {
-      this.vortexAngle += 0.1;
-    } else {
-      this.vortexAngle += 0.015;
-    }
-
-    // 원통이 좌우/상하로 흔들릴 때 내부 공들이 받는 관성 가속도
-    const shakeForceX = isShaking ? Math.sin(this.shakePhase * 1.7) * 4.2 : 0;
-    const shakeForceY = isShaking ? Math.cos(this.shakePhase * 2.3) * 3.6 : 0;
+    // 부드러운 에너지 감쇠 보간 (0.0 ~ 1.0)
+    const targetEnergy = isShaking ? 1 : this.turbulence > 1.5 ? 0.75 : 0;
+    this.swirlEnergy += (targetEnergy - this.swirlEnergy) * (targetEnergy > this.swirlEnergy ? 0.16 : 0.06);
+    this.vortexAngle += (0.012 + this.swirlEnergy * 0.095) * this.swirlDirection;
 
     for (let i = 0; i < this.balls.length; i++) {
       const b = this.balls[i];
 
-      if (isShaking) {
-        // 원통 흔들림 관성력 + 회오리 소용돌이 힘
+      if (this.swirlEnergy > 0.08) {
+        // 우아한 사이클론 회오리 기류 (접선 방향 가속 + 반경 방향 호흡 주기)
         const dx = b.x - cx;
         const dy = b.y - cy;
         const dist = Math.max(1, Math.hypot(dx, dy));
-        const tx = -dy / dist;
-        const ty = dx / dist;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const tx = -ny * this.swirlDirection;
+        const ty = nx * this.swirlDirection;
 
-        b.vx += shakeForceX + tx * 1.65 + (Math.random() - 0.5) * 3.8;
-        b.vy += shakeForceY + ty * 1.65 + (Math.random() - 0.52) * 3.8;
-      } else if (this.turbulence > 1.5) {
-        // Strong air jet mixing during draw
-        b.vx += (Math.random() - 0.5) * 2.4 * this.turbulence;
-        b.vy += (Math.random() - 0.52) * 2.4 * this.turbulence;
+        // 목표 궤도 반경으로 부드럽게 유도하면서 회전시켜 공들이 한곳에 뭉치지 않고 유려하게 회전
+        const targetOrbit = domeRadius * (0.48 + 0.28 * Math.sin(this.vortexAngle * 2 + i * 0.9));
+        const radialPull = ((targetOrbit - dist) / domeRadius) * 1.4;
+
+        b.vx += (tx * 1.35 + nx * radialPull) * this.swirlEnergy;
+        b.vy += (ty * 1.35 + ny * radialPull) * this.swirlEnergy;
+
+        if (this.turbulence > 1.5) {
+          b.vx += (Math.random() - 0.5) * 1.6 * this.turbulence;
+          b.vy += (Math.random() - 0.5) * 1.6 * this.turbulence;
+        }
       } else {
-        // Gentle floating / air blower at bottom
-        b.vy += 0.18;
+        // 평상시 부드러운 유영 (하단 에어 블로워)
+        b.vy += 0.16;
         if (b.y > cy + domeRadius * 0.45) {
-          b.vy -= 0.48 + Math.random() * 0.35;
-          b.vx += (Math.random() - 0.5) * 0.6;
+          b.vy -= 0.45 + Math.random() * 0.32;
+          b.vx += (Math.random() - 0.5) * 0.5;
         }
       }
 
-      // Clamp velocity
-      const maxSpeed = isShaking ? 19 : this.turbulence > 1.5 ? 15 : 3.8;
+      // 공기 저항 감쇠 및 최고 속도 제한
+      b.vx *= 0.985;
+      b.vy *= 0.985;
+      const maxSpeed = 3.8 + this.swirlEnergy * 12.5;
       const speed = Math.hypot(b.vx, b.vy);
       if (speed > maxSpeed) {
         b.vx = (b.vx / speed) * maxSpeed;
@@ -2616,10 +2758,9 @@ class LotteryDomeEngine {
         b.x = cx + nx * limit;
         b.y = cy + ny * limit;
 
-        // Reflect velocity
         const dot = b.vx * nx + b.vy * ny;
-        b.vx -= 1.85 * dot * nx;
-        b.vy -= 1.85 * dot * ny;
+        b.vx -= 1.82 * dot * nx;
+        b.vy -= 1.82 * dot * ny;
       }
     }
 
@@ -2642,10 +2783,9 @@ class LotteryDomeEngine {
           b.x += nx * overlap;
           b.y += ny * overlap;
 
-          // Exchange impulse
           const kx = a.vx - b.vx;
           const ky = a.vy - b.vy;
-          const p = 2 * (nx * kx + ny * ky) / 2;
+          const p = (nx * kx + ny * ky);
           a.vx -= p * nx * 0.85;
           a.vy -= p * ny * 0.85;
           b.vx += p * nx * 0.85;
@@ -2659,26 +2799,43 @@ class LotteryDomeEngine {
     const ctx = this.ctx;
     const W = this.canvas.width;
     const H = this.canvas.height;
+    const cx = W / 2;
+    const cy = H / 2;
     ctx.clearRect(0, 0, W, H);
 
-    // Draw subtle grid ring & swirling wind inside dome
-    const isShaking = performance.now() < this.shakeEndTime || this.turbulence > 1.5;
+    // 1. 은은한 내부 오로라 & 실크 리본 링 (점선 제거, 고급스러운 그라데이션 광원 적용)
     ctx.save();
-    ctx.translate(W / 2, H / 2);
-    ctx.rotate(this.vortexAngle);
-    ctx.strokeStyle = isShaking ? 'rgba(251, 191, 36, 0.28)' : 'rgba(255, 255, 255, 0.06)';
-    ctx.lineWidth = isShaking ? 3 : 2;
-    ctx.setLineDash(isShaking ? [28, 18] : []);
-    ctx.beginPath();
-    ctx.arc(0, 0, W / 2 - 42, 0, Math.PI * 2);
-    ctx.stroke();
-
-    if (isShaking) {
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([18, 24]);
+    if (this.swirlEnergy > 0.03) {
+      const auraGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, W / 2 - 20);
+      auraGrad.addColorStop(0, `rgba(56, 189, 248, ${0.18 * this.swirlEnergy})`);
+      auraGrad.addColorStop(0.55, `rgba(99, 102, 241, ${0.14 * this.swirlEnergy})`);
+      auraGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = auraGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, W / 2 - 82, 0, Math.PI * 2);
+      ctx.arc(cx, cy, W / 2 - 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 회전하는 유려한 빛의 궤적 호(Arc) 2개
+      ctx.translate(cx, cy);
+      ctx.rotate(this.vortexAngle);
+      for (let k = 0; k < 2; k++) {
+        ctx.rotate(Math.PI);
+        const arcGrad = ctx.createLinearGradient(-150, 0, 150, 0);
+        arcGrad.addColorStop(0, 'transparent');
+        arcGrad.addColorStop(0.5, `rgba(125, 211, 252, ${0.35 * this.swirlEnergy})`);
+        arcGrad.addColorStop(1, 'transparent');
+        ctx.strokeStyle = arcGrad;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(0, 0, W / 2 - 46 - k * 28, -0.7, 0.7);
+        ctx.stroke();
+      }
+    } else {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, W / 2 - 42, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
@@ -2688,7 +2845,7 @@ class LotteryDomeEngine {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
       ctx.font = '800 20px Pretendard, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('추첨 완료! 🎉', W / 2, H / 2);
+      ctx.fillText('추첨 완료! 🎉', cx, cy);
       ctx.restore();
       return;
     }
@@ -2696,7 +2853,25 @@ class LotteryDomeEngine {
     for (const b of this.balls) {
       ctx.save();
 
-      // 3D Sphere Gradient
+      // 2. 빠르게 회전할 때 공 뒤로 흐르는 부드러운 모션 글로우 잔상 (Motion Trail)
+      const speed = Math.hypot(b.vx, b.vy);
+      if (speed > 5.2 && this.swirlEnergy > 0.1) {
+        const trailLen = Math.min(34, speed * 2.1);
+        const tx = b.x - (b.vx / speed) * trailLen;
+        const ty = b.y - (b.vy / speed) * trailLen;
+        const trailGrad = ctx.createLinearGradient(b.x, b.y, tx, ty);
+        trailGrad.addColorStop(0, `${b.palette.light}55`);
+        trailGrad.addColorStop(1, 'transparent');
+        ctx.strokeStyle = trailGrad;
+        ctx.lineWidth = b.r * 1.45;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+      }
+
+      // 3. 3D Sphere Gradient
       const grad = ctx.createRadialGradient(
         b.x - b.r * 0.32,
         b.y - b.r * 0.32,
@@ -3250,7 +3425,7 @@ async function drawNextStudent() {
 
 let domeShakeVisualTimer = null;
 
-function triggerDomeVisualShake(durationMs = 780) {
+function triggerDomeVisualShake(durationMs = 920) {
   const domeWrap = document.getElementById('dome-wrapper');
   if (domeWrap) {
     domeWrap.classList.remove('shaking');
@@ -3271,12 +3446,12 @@ function shakeLotteryDomeManually() {
   const cls = getCurrentClass();
   const remaining = getRemainingStudents(cls);
   if (remaining.length === 0) {
-    showToast('⚠️ 현재 원통 안에 남은 학생 공이 없습니다!');
+    showToast('⚠️ 현재 캡슐 안에 남은 학생 공이 없습니다!');
     return;
   }
   hideWinnerSpotlight();
-  triggerDomeVisualShake(760);
-  showToast(`🌪️ 로또 원통을 신나게 흔들어 ${remaining.length}개의 공을 다시 섞었습니다!`);
+  triggerDomeVisualShake(920);
+  showToast(`🌪️ 에어 사이클론 가동! ${remaining.length}개의 공을 부드럽게 스월 믹싱했습니다.`);
 }
 
 async function handleSaveProgressForNextClass() {
