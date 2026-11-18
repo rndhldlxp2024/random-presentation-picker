@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>랜덤 발표 순서 뽑기 - 학급 추첨 시스템</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Particle Confetti Canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Main Fullscreen App Container -->
+  <div class="app-shell">
+    <!-- Top Header & 8-Class Tabs -->
+    <header class="top-bar">
+      <div class="brand-area">
+        <div class="logo-badge">🎯</div>
+        <div class="title-group">
+          <h1>랜덤 발표 순서 뽑기</h1>
+          <input type="text" id="presentation-title" class="title-input" value="자유 주제 발표" placeholder="발표 주제 입력 (예: 2학기 과학 탐구 발표)" aria-label="발표 주제 입력" />
+        </div>
+      </div>
+
+      <!-- 8 Classes Navigation -->
+      <nav class="class-tabs" id="class-tabs" aria-label="학급 선택">
+        <!-- JS populates 1반 ~ 8반 buttons -->
+      </nav>
+
+      <!-- Action Toolbar -->
+      <div class="toolbar">
+        <button type="button" class="tool-btn" id="btn-open-roster" title="명단 관리 (엑셀 붙여넣기)">
+          <span class="icon">📋</span>
+          <span>명단 입력/수정</span>
+        </button>
+        <button type="button" class="tool-btn folder-btn" id="btn-set-save-folder" title="앱이 있는 폴더를 선택하면 내부에 '뽑기 결과' 폴더를 만들어 이미지를 저장합니다">
+          <span class="icon">📁</span>
+          <span id="save-folder-text">저장폴더: 뽑기 결과</span>
+        </button>
+        <button type="button" class="tool-btn" id="btn-sound-toggle" title="효과음 켜기/끄기">
+          <span class="icon" id="sound-icon">🔊</span>
+          <span id="sound-text">효과음 ON</span>
+        </button>
+        <button type="button" class="tool-btn" id="btn-fullscreen" title="전체화면 전환">
+          <span class="icon">⛶</span>
+          <span>전체화면</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area: Switched between Draw Mode and Full Result Mode -->
+    <main class="main-stage">
+      <!-- MODE 1: Lottery Draw View (Left Stage + Right Live List) -->
+      <section class="draw-view" id="draw-view">
+        <!-- Left: Lottery Machine & Controls -->
+        <div class="machine-section">
+          <div class="machine-header">
+            <div class="class-pill" id="current-class-badge">1반</div>
+            <div class="status-pills">
+              <span class="pill">총원 <strong id="stat-total">0</strong>명</span>
+              <span class="pill accent">참여 <strong id="stat-active">0</strong>명</span>
+              <span class="pill success">완료 <strong id="stat-drawn">0</strong>명</span>
+              <span class="pill remain">남은 인원 <strong id="stat-remain">0</strong>명</span>
+            </div>
+            <div class="anim-mode-selector" role="group" aria-label="추첨 애니메이션 모드">
+              <button type="button" class="mode-chip active" data-mode="ball">🎱 로또볼 캡슐</button>
+              <button type="button" class="mode-chip" data-mode="slot">🎰 슬롯 릴</button>
+              <button type="button" class="mode-chip" data-mode="card">🃏 카드 플립</button>
+            </div>
+          </div>
+
+          <!-- Center Stage: The Visual Machine -->
+          <div class="stage-center" id="stage-center">
+            <!-- Ball Machine Container -->
+            <div class="anim-stage active" id="stage-ball">
+              <div class="dome-wrapper" id="dome-wrapper" title="클릭하면 로또 원통을 신나게 흔들어 공을 섞습니다! (단축키: S)">
+                <div class="dome-outer-ring"></div>
+                <canvas id="lottery-dome-canvas" width="460" height="460"></canvas>
+                <div class="dome-glass-shine"></div>
+                <div class="dome-chute"></div>
+                <button type="button" class="dome-shake-btn" id="btn-dome-shake" title="로또 원통을 흔들어 공 섞기 (단축키: S)">
+                  <span>🌪️ 원통 흔들기</span>
+                  <kbd>S</kbd>
+                </button>
+              </div>
+            </div>
+
+            <!-- Slot Machine Container -->
+            <div class="anim-stage" id="stage-slot">
+              <div class="slot-machine-frame">
+                <div class="slot-lights">
+                  <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="slot-windows">
+                  <div class="slot-window order-win">
+                    <div class="win-label">발표 순서</div>
+                    <div class="win-value" id="slot-order-val">1번째</div>
+                  </div>
+                  <div class="slot-window num-win">
+                    <div class="win-label">학번/번호</div>
+                    <div class="win-value" id="slot-num-val">--</div>
+                  </div>
+                  <div class="slot-window name-win">
+                    <div class="win-label">학생 이름</div>
+                    <div class="win-value" id="slot-name-val">준비 완료</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Flip Container -->
+            <div class="anim-stage" id="stage-card">
+              <div class="card-stage-wrapper">
+                <div class="playing-card" id="flip-card">
+                  <div class="card-face card-back">
+                    <div class="card-pattern">
+                      <span class="card-logo">★</span>
+                      <span class="card-sub">NEXT PRESENTER</span>
+                    </div>
+                  </div>
+                  <div class="card-face card-front">
+                    <div class="card-order-tag" id="card-order-val">1번째 발표자</div>
+                    <div class="card-number-ball" id="card-num-val">1</div>
+                    <div class="card-student-name" id="card-name-val">홍길동</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Popped Winner Spotlight Overlay -->
+            <div class="winner-spotlight hidden" id="winner-spotlight">
+              <div class="spotlight-glow"></div>
+              <div class="winner-card">
+                <div class="winner-order-ribbon" id="winner-order-badge">1번째 발표자</div>
+                <div class="winner-ball-Row">
+                  <div class="winner-lotto-ball" id="winner-ball">
+                    <span class="ball-shine"></span>
+                    <span class="ball-number" id="winner-num">7</span>
+                  </div>
+                  <div class="winner-info">
+                    <div class="winner-name" id="winner-name">김민준</div>
+                    <div class="winner-sub" id="winner-sub">1반 · 7번</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--Remaining Candidates Pool Chips -->
+          <div class="pool-bar">
+            <div class="pool-title">
+              <div class="pool-title-left">
+                <span>학생 클릭 동작:</span>
+                <div class="chip-mode-switch" role="group" aria-label="학생 이름 클릭 동작 선택">
+                  <button type="button" class="chip-mode-btn active" id="chip-mode-exclude" data-chip-mode="exclude" title="클릭한 학생을 오늘 결석/제외로 표시합니다">
+                    🚫 결석/제외 체크
+                  </button>
+                  <button type="button" class="chip-mode-btn done-mode" id="chip-mode-done" data-chip-mode="done" title="지난 시간에 이미 발표한 학생을 클릭하면 발표 완료 리스트에 즉시 추가합니다">
+                    ✅ 지난 시간 발표완료 체크
+                  </button>
+                </div>
+              </div>
+              <span class="pool-hint">단축키: <kbd>Space</kbd> 1명 뽑기 · <kbd>S</kbd> 원통 흔들기 · <kbd>Shift+클릭</kbd> 즉시 발표완료</span>
+            </div>
+            <div class="pool-chips" id="pool-chips"></div>
+          </div>
+
+          <!-- Bottom Control Bar -->
+          <div class="control-bar">
+            <div class="speed-control">
+              <label for="speed-select">추첨 속도</label>
+              <select id="speed-select">
+                <option value="normal">기본 (긴장감 있게)</option>
+                <option value="fast">빠르게 (스피드)</option>
+                <option value="instant">즉시 뽑기</option>
+              </select>
+            </div>
+
+            <div class="primary-actions">
+              <button type="button" class="btn-draw-one" id="btn-draw-one">
+                <span class="btn-icon">🎱</span>
+                <span id="btn-draw-one-text">다음 발표자 뽑기 (Space)</span>
+              </button>
+              <button type="button" class="btn-draw-auto" id="btn-draw-auto">
+                <span class="btn-icon">⚡</span>
+                <span id="btn-draw-auto-text">연속 자동 뽑기</span>
+              </button>
+              <button type="button" class="btn-draw-all" id="btn-draw-all" title="남은 인원 한 번에 추첨">
+                <span>남은 인원 일괄 완성</span>
+              </button>
+            </div>
+
+            <div class="secondary-actions">
+              <button type="button" class="btn-sub" id="btn-undo" title="방금 뽑은 학생 취소">↩ 직전 취소</button>
+              <button type="button" class="btn-sub danger" id="btn-reset" title="현재 학급 추첨 초기화">🔄 다시 뽑기</button>
+              <button type="button" class="btn-sub highlight" id="btn-show-full" title="전체화면 결과 보드 열기">🏆 전체 결과 화면</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Live Picked Order Sidebar -->
+        <aside class="sidebar-list">
+          <div class="sidebar-header">
+            <div>
+              <h2>발표 순서 리스트</h2>
+              <p class="sidebar-meta" id="sidebar-meta">1반 · 아직 추첨 전입니다</p>
+            </div>
+            <div class="sidebar-actions">
+              <button type="button" class="mini-btn save-progress-btn" id="btn-save-progress" title="현재까지 뽑은 발표 순서를 USB(roster_data.js)에 저장하여 다음 수업 시간에 그대로 이어서 뽑습니다">⏸️ 이어하기 저장</button>
+              <button type="button" class="mini-btn" id="btn-side-copy" title="클립보드에 텍스트 복사">📋 복사</button>
+              <button type="button" class="mini-btn" id="btn-side-image" title="앱 폴더 내 '뽑기 결과' 폴더에 이미지 저장">🖼️ 결과 이미지</button>
+            </div>
+          </div>
+
+          <div class="picked-list-container" id="picked-list-container">
+            <ol class="picked-list" id="picked-list">
+              <!-- Populated dynamically -->
+            </ol>
+            <div class="empty-list-state" id="empty-list-state">
+              <div class="empty-illust">🎲</div>
+              <p>왼쪽의 <strong>[다음 발표자 뽑기]</strong> 버튼을 누르거나<br /><kbd>Space</kbd> 키를 눌러 추첨을 시작하세요!</p>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- MODE 2: Fullscreen Final Board View (Shown when all picked or toggled) -->
+      <section class="full-result-view hidden" id="full-result-view">
+        <div class="result-board-toolbar">
+          <button type="button" class="btn-back-draw" id="btn-back-draw">
+            ← 추첨 화면으로 돌아가기
+          </button>
+
+          <div class="result-export-group">
+            <button type="button" class="btn-export copy-text" id="btn-copy-text">
+              📋 텍스트 복사 (엑셀/메신저용)
+            </button>
+            <button type="button" class="btn-export copy-img" id="btn-copy-img">
+              📸 결과 이미지 클립보드 복사
+            </button>
+            <button type="button" class="btn-export save-png" id="btn-save-png" title="앱이 있는 폴더의 '뽑기 결과' 폴더에 고화질 PNG 저장">
+              💾 '뽑기 결과' 폴더에 이미지 저장 (PNG)
+            </button>
+            <button type="button" class="btn-export danger" id="btn-result-reset">
+              🔄 처음부터 다시 뽑기
+            </button>
+          </div>
+        </div>
+
+        <!-- The Board Display filling the screen -->
+        <div class="result-board-card" id="result-board-card">
+          <div class="board-header">
+            <div class="board-title-area">
+              <span class="board-class-tag" id="board-class-tag">1반</span>
+              <h2 id="board-main-title">자유 주제 발표 순서</h2>
+            </div>
+            <div class="board-meta-area">
+              <div class="meta-item">
+                <span class="meta-label">추첨 일시</span>
+                <span class="meta-val" id="board-date-val">2026. 11. 04.</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">참여 인원</span>
+                <span class="meta-val" id="board-count-val">24명</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Responsive Grid filling the screen for 18~25 students -->
+          <div class="board-grid" id="board-grid">
+            <!-- Cards 1 to N -->
+          </div>
+
+          <div class="board-footer">
+            <span id="board-excluded-info">결석/제외: 없음</span>
+            <span class="board-watermark">공정하고 투명한 랜덤 추첨 시스템</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Roster Input Modal (Excel Copy-Paste for 8 Classes) -->
+  <dialog class="roster-modal" id="roster-modal">
+    <div class="modal-inner">
+      <div class="modal-header">
+        <div>
+          <h2>학급별 학생 명단 관리 (1반 ~ 8반)</h2>
+          <p>엑셀(Excel)이나 한글/스프레드시트에서 <strong>[번호 / 이름]</strong> 두 열을 드래그해 복사(<kbd>Ctrl+C</kbd>)한 뒤 아래 입력창에 그대로 붙여넣기(<kbd>Ctrl+V</kbd>) 하세요.</p>
+        </div>
+        <button type="button" class="modal-close" id="btn-close-modal" aria-label="닫기">✕</button>
+      </div>
+
+      <div class="modal-class-tabs" id="modal-class-tabs">
+        <!-- 1반 ~ 8반 탭 -->
+      </div>
+
+      <div class="modal-body">
+        <div class="roster-editor-col">
+          <div class="editor-top-row">
+            <label for="class-custom-name">학급 표시 이름</label>
+            <input type="text" id="class-custom-name" class="class-name-input" placeholder="예: 1반 (또는 3학년 1반)" />
+            <button type="button" class="btn-sample" id="btn-fill-sample">✨ 샘플 명단(22명) 자동 채우기</button>
+            <button type="button" class="btn-sample" id="btn-fill-all-samples">🏫 8학급 전체 샘플 채우기</button>
+          </div>
+
+          <label for="roster-textarea" class="textarea-label">
+            <span>엑셀 붙여넣기 영역 (줄바꿈으로 학생 구분, 탭/공백/쉼표로 번호와 이름 자동 분리)</span>
+            <span class="student-count-badge" id="modal-parsed-count">현재 0명 인식됨</span>
+          </label>
+          <textarea id="roster-textarea" rows="12" placeholder="엑셀에서 복사해서 붙여넣거나 아래처럼 입력하세요:&#10;1	김민준&#10;2	이서연&#10;3	박도윤&#10;...&#10;또는 이름만 한 줄에 한 명씩 입력해도 자동으로 번호가 부여됩니다."></textarea>
+        </div>
+
+        <div class="roster-preview-col">
+          <div class="preview-header">
+            <h3>인식된 학생 미리보기</h3>
+            <span class="preview-sub">체크 해제 시 오늘 발표에서 제외(결석 등)됩니다</span>
+          </div>
+          <div class="preview-table-wrap">
+            <table class="preview-table">
+              <thead>
+                <tr>
+                  <th>참여</th>
+                  <th>번호</th>
+                  <th>이름</th>
+                </tr>
+              </thead>
+              <tbody id="roster-preview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="storage-notice">💡 저장 시 앱 폴더의 <strong>roster_data.js</strong> 파일에 함께 기록되어 <strong>다른 컴퓨터로 복사/이동해도 명단이 그대로 유지</strong>됩니다.</span>
+        <div class="modal-btn-group">
+          <input type="file" id="roster-file-input" accept=".js,.json" hidden />
+          <button type="button" class="btn-modal-sub" id="btn-import-roster" title="저장된 roster_data.js 또는 JSON 명단 파일 불러오기">📂 파일에서 불러오기</button>
+          <button type="button" class="btn-modal-cancel" id="btn-modal-cancel">취소</button>
+          <button type="button" class="btn-modal-save" id="btn-modal-save">💾 USB 폴더에 저장 및 적용하기</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Toast Notification -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="roster_data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
